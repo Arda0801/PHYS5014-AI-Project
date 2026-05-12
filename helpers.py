@@ -1,10 +1,12 @@
 # Helper funtions for working with fibre bundle holographic focusing dataset.
-
 import pickle
-
 import numpy as np
 import matplotlib.pyplot as plt
+from pathlib import Path
 
+#Loads the file no matter directory structure
+BASE_DIR = Path(__file__).resolve().parent
+DEFAULT_FILENAME = BASE_DIR / "focus_score_curves_dataset.pkl"
 
 class FocusData:
     """Class to hold the focus score curves and associated data for a 
@@ -22,7 +24,7 @@ class FocusData:
         self.norm_scores = self.norm_scores / np.max(self.norm_scores, 0)
 
 
-def load_focus_data(filename, offset = 0, types = None):
+def load_focus_data(filename=DEFAULT_FILENAME, offset=0, types=None):
     """Load the focus score curves and associated data from a pickle file.
     
     Arguments:
