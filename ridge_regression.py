@@ -20,9 +20,8 @@ print(f"  Metrics: {data.num_metrics} → {data.metrics}")
 print(f"  Types:   {np.unique(data.image_types)}")
 
 # --- Baseline performance of individual metrics --------------------------------
-# Before training the model, let's see how well each individual metric performs on its own.
-# This gives us a baseline to compare against. If the Ridge model can't beat the best
-# individual metric, then it's not really learning anything useful from combining them.
+# Before training the model, we determine a baseline perfomance from individual metrics.
+# This creates a baseline for the Ridge model to beat.
 
 print("\n--- Baseline (individual metrics, tol=0.1mm) ---")
 tol = 0.1
@@ -128,16 +127,13 @@ X_test_scaled  = scaler.transform(X_test)
 # Ridge regression is linear regression with L2 regularisation. This means
 # it adds a penalty to the loss function that discourages large weights:
 #
-#   Loss = mean_squared_error(predictions, targets) + alpha * sum(weights^2)
-#
 # The alpha parameter controls how strong the regularisation is:
 #   - alpha=0:    pure linear regression, no regularisation (can overfit)
 #   - alpha=1:    mild regularisation (good default)
 #   - alpha=100:  strong regularisation (weights are pushed towards zero)
 #
-# Regularisation helps when the 7 metrics are correlated with each other
-# (which they likely are — most focus metrics respond to similar image
-# features). Without it, the model might assign very large positive weight
+# Regularisation helps when the 7 metrics are correlated with each other. 
+# Without it, the model might assign very large positive weight
 # to one metric and equally large negative weight to a correlated one,
 # which is numerically unstable and generalises poorly.
 
@@ -152,7 +148,7 @@ for metric, weight in zip(data.metrics, model.coef_):
     print(f"  {metric:<20s}: {weight:+.4f}")
 print(f"  {'bias':<20s}: {model.intercept_:+.4f}")
 
-# The weights tell you how much each metric contributes to the combined score.
+# The weights tells how much each metric contributes to the combined score.
 # A large positive weight means that metric strongly indicates focus when high.
 # A near-zero weight means that metric is being mostly ignored.
 
@@ -160,8 +156,7 @@ print(f"  {'bias':<20s}: {model.intercept_:+.4f}")
 # At test time, we run the model on each (image, depth) pair and reshape the
 # outputs back into curves of shape (num_images, num_depths).
 #
-# The model outputs HIGH values where it thinks the image is in focus
-# (because the Gaussian target was high at the true depth).
+# The model outputs HIGH values where it thinks the image is in focus because of the Gaussian target.
 # fraction_correct expects LOW values at the true depth, so we negate.
 
 y_pred = model.predict(X_test_scaled)
@@ -193,7 +188,7 @@ for sample_type in np.unique(data.image_types):
 # --- Plots ----------------------------------------------------------------------
 
 # --- Plot 1: Learned Weights Bar Chart --------------------------------------
-# This is unique to the linear model — you can directly inspect what the model
+# This is unique to the linear model where you can directly inspect what the model
 # learned. The MLP has hundreds of weights that are hard to interpret; here
 # you have exactly 7, one per metric.
 
@@ -246,13 +241,13 @@ plt.savefig("plot_linear_per_type.png", dpi=150)
 plt.show()
 
 # --- Plot 4: Single Image — Model Curve vs Raw Metrics ----------------------
-# Same diagnostic plot as the MLP version. The model output curve (black line)
+# Same diagnostic plot as the MLP version. The model output curve
 # should ideally have a clear minimum near the red true-depth line.
 
-example_idx = 0
+example_idx = 0  # Change this index to see different test images
 
-raw_norm  = test_scores_norm[example_idx]              # (num_depths, 7)
-mlp_curve = predicted_curves[example_idx]              # (num_depths,)
+raw_norm  = test_scores_norm[example_idx]              
+mlp_curve = predicted_curves[example_idx]             
 mlp_norm  = (mlp_curve - mlp_curve.min()) / (mlp_curve.max() - mlp_curve.min() + 1e-8)
 
 plt.figure(figsize=(10, 5))
@@ -272,7 +267,7 @@ plt.show()
 
 # --- Plot 5: Gaussian Targets for a Few Training Images ---------------------
 # This plot is unique to the linear version and shows what the target labels
-# look like — the soft Gaussian curves the model is trained to predict.
+# look like. The soft Gaussian curves the model is trained to predict.
 # It helps you understand what the model is actually learning to do.
 
 plt.figure(figsize=(10, 4))

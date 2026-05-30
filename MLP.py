@@ -7,7 +7,8 @@ import torch.nn as nn
 from helpers import load_focus_data, fraction_correct
 
 # - - Load Data ----------------------------------------------------------------
-# offset=20 skips the first 20 depth values (0-0.2mm), which are noisy because
+# offset=20 skips the first 20 depth values (0-0.2mm), which are noisy and not
+# useful for training.
 
 print("Loading data...")
 data = load_focus_data(offset=20)
@@ -97,21 +98,15 @@ train_idx_tensor = torch.tensor(train_depth_indices, dtype=torch.long)
 # scores everywhere else. This is a ranking/ordering problem.
 #
 # For each image, for every depth d that is NOT the true depth, we penalise
-# the model if:
-#     model_output[true_depth] >= model_output[d] - margin
-# i.e. the true depth score is not sufficiently lower than other scores.
-#
-# torch.clamp(..., min=0) acts like max(0, ...) — only penalises violations.
+# the model if the true depth score is not sufficiently lower than other scores.
 # margin controls how much separation we demand between true and false depths.
 
 def focus_loss(outputs, true_depth_indices, margin=0.2):
     total_loss = torch.tensor(0.0, requires_grad=True)
 
     for i in range(outputs.shape[0]):
-        true_score = outputs[i, true_depth_indices[i]]   # scalar
-        all_scores = outputs[i]                           # (num_depths,)
-
-        # Penalise: margin + true_score - other_score > 0 means violation
+        true_score = outputs[i, true_depth_indices[i]] 
+        all_scores = outputs[i]                           
         penalties = torch.clamp(margin + true_score - all_scores, min=0.0)
         total_loss = total_loss + torch.mean(penalties)
 
@@ -130,17 +125,14 @@ class FocusMLP(nn.Module):
     def __init__(self):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(7, 32),    # 7 metrics → 32 hidden units
+            nn.Linear(7, 32),   
             nn.ReLU(),
-            nn.Linear(32, 16),   # 32 → 16 hidden units
+            nn.Linear(32, 16),  
             nn.ReLU(),
-            nn.Linear(16, 1)     # 16 → 1 output score
+            nn.Linear(16, 1)  
         )
 
     def forward(self, x):
-        # x shape: (num_images, num_depths, 7)
-        # self.net applied to last dim → (num_images, num_depths, 1)
-        # squeeze(-1) removes the trailing 1 → (num_images, num_depths)
         return self.net(x).squeeze(-1)
 
 # - - - Training Loop ---------------------------------------------------------------
@@ -154,13 +146,13 @@ losses     = []
 print("\nTraining MLP...")
 for epoch in range(num_epochs):
     model.train()
-    optimiser.zero_grad()               # clear gradients from last step
+    optimiser.zero_grad()               
 
-    outputs = model(X_train)            # forward pass → (N_train, num_depths)
+    outputs = model(X_train)           
     loss    = focus_loss(outputs, train_idx_tensor, margin=0.2)
 
-    loss.backward()                     # compute gradients
-    optimiser.step()                    # update weights
+    loss.backward()                   
+    optimiser.step()                
 
     losses.append(loss.item())
 
@@ -244,10 +236,10 @@ plt.show()
 
 # --- Plot 4: Single Image — Model Curve vs Raw Metrics ----------------------
 # Pick one test image and overlay all raw metrics alongside the model output.
-# This is the most informative diagnostic plot — you can see whether the model
+# This is the most informative diagnostic plot. You can see whether the model
 # produces a cleaner, sharper minimum near the true depth.
 
-example_idx = 0
+example_idx = 0    # Change this index to see different test images
 
 raw_norm = test_scores_norm[example_idx]
 mlp_curve = predicted_curves[example_idx]
