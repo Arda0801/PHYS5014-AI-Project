@@ -1,0 +1,51 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{geometry}
+\geometry{margin=2cm, a4paper}
+\usepackage{amsmath}
+\usepackage{siunitx}
+\usepackage{hyperref}
+\usepackage{gensymb}
+\usepackage{xcolor}
+\usepackage{appendix}
+\usepackage{booktabs}
+\usepackage{tcolorbox}
+\usepackage{listings}
+\tcbuselibrary{listings,breakable,xparse,skins}
+
+\title{Use of Ridge Regression to Combine Focus Metrics in Inline Holographic Microscopy}
+\author{Arda Aydinlar}
+\date{May 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+    
+\end{abstract}
+
+\section{The Big Picture}
+The physical problem is autofocus in inline holographic microscopy: given a hologram of an unknown sample, find the correct numerical refocus distance. Seven different focus metrics are computed at 200 depth values for each of 750 holograms spanning five biological and optical sample types. Each metric provides a partial, noisy signal about which depth is in focus, and no single metric reliably identifies the correct depth across all sample types and conditions.
+
+Success is defined using the \texttt{fraction\_correct} metric: the proportion of test images for which the model's predicted best-focus depth falls within a tolerance window of the manually-determined ground truth depth. The primary tolerance used is 0.1 mm, which corresponds to ten depth steps of 10 microns each. A secondary evaluation is also performed at tolerances of 0.05, 0.2, and 0.5 mm to give a fuller picture of model precision. The model is considered successful if it achieves a higher \texttt{fraction\_correct} than the best individual metric across the test set.
+
+\section{Get Data}
+
+Data 
+
+\section{Explore}
+
+\section{Prepare}
+
+\section{Train}
+
+\section{Fine-Tune}
+
+\section{Present}
+
+\section{Launch}
+
+\bibliography{}
+
+\end{document}

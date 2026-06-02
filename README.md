@@ -99,8 +99,8 @@ These observations directly motivate both the preprocessing decisions (depth off
 **Per-image normalisation:** Each of the seven metrics is independently normalised to the range [0, 1] within each image:
 
 ```python
-s_min = scores.min(axis=1, keepdims=True)   # minimum over depth axis
-s_max = scores.max(axis=1, keepdims=True)   # maximum over depth axis
+s_min = scores.min(axis=1, keepdims=True) 
+s_max = scores.max(axis=1, keepdims=True)  
 scores_norm = (scores - s_min) / (s_max - s_min + 1e-8)
 ```
 
@@ -147,7 +147,6 @@ To find the best alpha, a search over a logarithmic grid is recommended:
 for alpha in [0.01, 0.1, 1.0, 10.0, 100.0]:
     model = Ridge(alpha=alpha)
     model.fit(X_train_scaled, y_train)
-    # evaluate fraction_correct on validation set
 ```
 
 The `sigma` parameter of the Gaussian target (default 0.1 mm) is a second tuning variable. A smaller sigma (e.g. 0.05 mm) creates sharper, more demanding targets — only depths very close to true focus receive high labels. A larger sigma (e.g. 0.2 mm) is more forgiving but may produce broader output curves with less precise predicted minima. Both alpha and sigma should be tuned using a held-out validation set carved from the training data, not the final test set.

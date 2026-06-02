@@ -80,7 +80,7 @@ test_scores_norm  = normalise_per_image(test_scores)
 #   - Far from true depth:    target ≈ 0.0  (out of focus)
 #
 # The model then learns to predict these Gaussian values from the 7 metrics.
-# At test time, we find the depth where the model's output is highest — that
+# At test time, we find the depth where the model's output is highest. That
 # is our focus prediction. (Note: unlike the MLP which predicts LOW=focused,
 # here HIGH=focused because the Gaussian peaks at the true depth. We negate
 # the output before passing to fraction_correct which expects LOW=focused.)
@@ -116,7 +116,7 @@ print(f"Test set shape:     X={X_test.shape},  y={y_test.shape}")
 # normalisation, because the regularisation penalty treats all features equally.
 # StandardScaler rescales each of the 7 features to have mean=0 and std=1
 # across all training samples. We fit the scaler ONLY on training data and
-# then apply the same transformation to test data — never fit on test data,
+# then apply the same transformation to test data, never fit on test data,
 # as that would be data leakage.
 
 scaler  = StandardScaler()
