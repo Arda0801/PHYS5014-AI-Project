@@ -149,7 +149,7 @@ for alpha in [0.01, 0.1, 1.0, 10.0, 100.0]:
     model.fit(X_train_scaled, y_train)
 ```
 
-The `sigma` parameter of the Gaussian target (default 0.1 mm) is a second tuning variable. A smaller sigma (e.g. 0.05 mm) creates sharper, more demanding targets — only depths very close to true focus receive high labels. A larger sigma (e.g. 0.2 mm) is more forgiving but may produce broader output curves with less precise predicted minima. Both alpha and sigma should be tuned using a held-out validation set carved from the training data, not the final test set.
+The `sigma` parameter of the Gaussian target (default 0.1 mm) is a second tuning variable. A smaller sigma (e.g. 0.05 mm) creates sharper, more demanding targets, only depths very close to true focus receive high labels. A larger sigma (e.g. 0.2 mm) is more forgiving but may produce broader output curves with less precise predicted minima. Both alpha and sigma should be tuned using a held-out validation set carved from the training data, not the final test set.
 
 The `offset` parameter (default 20) can also be varied to investigate how much of the noisy short-distance region needs to be removed. Values between 10 and 30 are reasonable to explore.
 
