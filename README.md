@@ -3,7 +3,11 @@ Combining Focus Metrics in Inline Holographic Microscopy with Machine Learning
 
 This project was created for the PHYS5014 Machine Learning for Natural Sciences module.
 
-## How To Run
+## Installation
+
+### Prerequisites
+- Python 3.8 or higher
+- pip package manager
 
 ### Clone the repository
 ```bash
@@ -11,14 +15,63 @@ git clone https://github.com/Arda0801/PHYS5014-AI-Project
 cd PHYS5014-AI-Project
 ```
 
-### Run the Project
+### Create a virtual environment (recommended)
+```bash
+python3 -m venv venv
+source venv/bin/activate   # On Windows: venv\Scripts\activate
 ```
-python MLP.py
+
+### Install required Python packages
+```bash
+pip install numpy matplotlib scikit-learn torch
 ```
-or
-```
+
+The project depends on the following libraries:
+- numpy: numerical computations
+- matplotlib: plotting and visualisation
+- scikit-learn: Ridge regression, train/test split, StandardScaler
+- torch: MLP implementation (PyTorch)
+
+### Dataset
+The dataset is provided as a Python pickle file `focus_score_curves_dataset.pkl` in the repository root. It contains:
+- **scores**: array of shape (750 images, 200 depths, 7 metrics) with raw focus metric values
+- **depths**: 200 numerical refocus distances in millimetres (0 to 2 mm in 10 micron steps)
+- **true_depths**: manually-determined ground truth focus depth for each image (in mm)
+- **image_types**: sample type labels (paramecium, lilium, bee wing, ipomoea, USAF target)
+- **metrics**: names of the seven focus metrics
+
+If the dataset file is missing, it must be obtained from the course materials or generated using the appropriate data collection pipeline.
+
+---
+
+## How To Run
+
+### Run the Ridge Regression Model
+```bash
 python ridge_regression.py
 ```
+
+This script:
+1. Loads the data with `offset=20` (removes first 20 depth values covering 0 to 0.2 mm)
+2. Performs per-image normalisation of each metric to range [0, 1]
+3. Applies StandardScaler (fit on training data only)
+4. Trains a Ridge regression model with `alpha=1.0` using Gaussian target labels (sigma=0.1 mm)
+5. Evaluates fraction_correct at tolerances 0.05, 0.1, 0.2, 0.5 mm
+6. Generates diagnostic plots (saved as PNG files)
+
+### Run the MLP Model
+```bash
+python MLP.py
+```
+
+This script:
+1. Loads the data with `offset=20` (same preprocessing as Ridge)
+2. Performs per-image normalisation of each metric to range [0, 1]
+3. Converts data to PyTorch tensors
+4. Trains a three-layer MLP (7 -> 32 -> 16 -> 1) for 150 epochs using Adam optimiser (lr=1e-3)
+5. Uses margin ranking loss with margin=0.2
+6. Evaluates fraction_correct at tolerances 0.05, 0.1, 0.2, 0.5 mm
+7. Generates diagnostic plots (saved as PNG files)
 
 ---
 
@@ -40,7 +93,7 @@ Development of a machine learning model that takes 7 different focus metric outp
 
 ## Why Not Standard Linear Regression?
 
-The first attempt at this project used standard linear regression, available in earlier versions of this repository. This approach did not perform well because the seven focus metrics have very different value ranges and are correlated with one another  metrics like Sobel variance, Brenner, and Tenengrad all measure image sharpness using slightly different formulas and therefore tend to rise and fall together. Standard linear regression minimises the mean squared error between predictions and targets without any constraint on the size of the learned weights. When input features are correlated, this leads to numerical instability: the model may assign an extremely large positive weight to one metric and an equally large negative weight to a correlated one, effectively cancelling them out in a way that does not generalise to new images.
+The first attempt at this project used standard linear regression, available in earlier versions of this repository. This approach did not perform well because the seven focus metrics have very different value ranges and are correlated with one another — metrics like Sobel variance, Brenner, and Tenengrad all measure image sharpness using slightly different formulas and therefore tend to rise and fall together. Standard linear regression minimises the mean squared error between predictions and targets without any constraint on the size of the learned weights. When input features are correlated, this leads to numerical instability: the model may assign an extremely large positive weight to one metric and an equally large negative weight to a correlated one, effectively cancelling them out in a way that does not generalise to new images.
 
 Ridge regression addresses this by adding a penalty term to the loss function that discourages large weights. Instead of minimising prediction error alone, it minimises prediction error plus alpha times the sum of squared weights. This forces the model to spread weight more evenly across correlated features rather than assigning extreme values that cancel out. The result is a model that generalises far better to unseen images. With seven metrics that measure overlapping properties of the same image, Ridge regression is almost always the right choice over plain linear regression, producing weights that are more trustworthy and stable on new data.
 
@@ -50,7 +103,7 @@ Ridge regression addresses this by adding a penalty term to the loss function th
 
 A Multi-Layer Perceptron (MLP) was also explored as a more powerful alternative to Ridge regression. An MLP is a neural network that works by passing the 7 metric inputs through an artificial set of "neurons". Each neuron takes all the numbers from the previous layer, multiplies each by a learned weight, adds them all up, then passes the result through an activation function (in this case, ReLU). ReLU simply sets any negative values to zero: max(0, x). This sounds trivial, but stacking many layers of these neurons with ReLU activations allows the network to approximate almost any mathematical function. The weights are what get learned during training.
 
-The reason an MLP is appropriate here  rather than a convolutional neural network (CNN) or recurrent network (RNN)  is that the model sees each depth independently. The input is simply seven numbers at a single depth, with no spatial or sequential structure. MLPs are specifically designed for this kind of fixed-size numerical input.
+The reason an MLP is appropriate here — rather than a convolutional neural network (CNN) or recurrent network (RNN) — is that the model sees each depth independently. The input is simply seven numbers at a single depth, with no spatial or sequential structure. MLPs are specifically designed for this kind of fixed-size numerical input.
 
 ---
 
@@ -182,3 +235,97 @@ best_focus_depths = data.depths[best_focus_indices]
 ```
 
 For continuous monitoring, `fraction_correct` should be evaluated periodically on new labelled images as they become available. If performance degrades (for example when imaging a new sample type or after instrument recalibration) the model should be retrained on an expanded dataset that includes the new data. Because Ridge regression trains in milliseconds, retraining is cheap. The `alpha` and `sigma` hyperparameters should be re-validated whenever the training set changes substantially, as the optimal values may shift with a different data distribution.
+
+---
+
+## Generated Plots
+
+The following diagnostic plots are generated when running the scripts. They are saved as PNG files in the repository root.
+
+### Ridge Regression Plots
+
+**Learned Ridge Weights**  
+![Learned Ridge Weights](plot_linear_weights_linear.png)  
+Bar chart of the seven metric weights learned by the Ridge model.
+
+**Ridge vs. Baseline (Fraction-Correct at 0.1 mm)**  
+![Ridge vs Baseline](plot_linear_baseline_comparison_linear.png)  
+Comparison of the Ridge model's fraction_correct against each individual metric at a tolerance of 0.1 mm.
+
+**Per-Sample-Type Performance (Ridge)**  
+![Ridge Per-Sample Type](plot_linear_per_type_linear.png)  
+Fraction_correct for each sample type using the Ridge model at 0.1 mm tolerance.
+
+**Single-Image Curve (Ridge)**  
+![Ridge Single-Image Curve](plot_linear_single_image_curve_linear.png)  
+Model output curve overlaid with the seven raw normalised metrics for a representative test image. The true depth is shown as a vertical line.
+
+**Gaussian Target Labels**  
+![Gaussian Targets](plot_linear_gaussian_targets_linear.png)  
+Gaussian target labels for five training images showing what the model learns to predict.
+
+### MLP Plots
+
+**Training Loss**  
+![MLP Training Loss](plot_training_loss_0.1.png)  
+Training loss over 150 epochs for the MLP model.
+
+**MLP vs. Baseline (Fraction-Correct at 0.1 mm)**  
+![MLP vs Baseline](plot_baseline_comparison_0.1.png)  
+Bar chart showing the MLP's fraction_correct compared to each individual metric.
+
+**Per-Sample-Type Performance (MLP)**  
+![MLP Per-Sample Type](plot_per_type_0.1.png)  
+Fraction_correct for each sample type using the MLP model at 0.1 mm tolerance.
+
+**Single-Image Curve (MLP)**  
+![MLP Single-Image Curve](plot_single_image_curve_0.1.png)  
+MLP output curve with raw metrics for a representative test image.
+
+---
+
+## Summary of Results
+
+| Model | Tolerance (mm) | Fraction-Correct |
+|-------|----------------|------------------|
+| Best Individual Metric (Sobel Variance) | 0.1 | 0.675 |
+| Ridge Regression (alpha=1.0) | 0.1 | 0.676 |
+| MLP | 0.1 | 0.757 |
+| Ridge Regression (alpha=1.0) | 0.05 | 0.566 |
+| MLP | 0.05 | 0.654 |
+| Ridge Regression (alpha=1.0) | 0.5 | 0.831 |
+| MLP | 0.5 | 0.919 |
+
+The MLP consistently outperforms the Ridge model and the best individual metric, especially at the primary tolerance of 0.1 mm (8.2 percentage points absolute improvement over the best individual metric).
+
+Per-sample-type breakdown at 0.1 mm tolerance:
+
+| Sample Type | Ridge | MLP |
+|-------------|-------|-----|
+| Bee wing | 0.643 | 0.643 |
+| Ipomoea leaf | 0.577 | 0.615 |
+| Lilium anther | 1.000 | 1.000 |
+| Paramecium stained | 0.250 | 0.607 |
+| USAF target | 0.923 | 0.923 |
+| Overall | 0.676 | 0.757 |
+
+Both models achieve perfect performance on lilium anther and near-perfect on USAF target. The MLP's advantage is most pronounced on paramecium stained samples, where it substantially outperforms Ridge regression (0.607 vs 0.250), suggesting non-linear interactions are important for complex biological samples.
+
+---
+
+## Extending the Project
+
+- **Hyper-parameter search:** Vary `alpha` for Ridge and `sigma` for the Gaussian target to explore regularisation effects. For the MLP, explore different architectures, learning rates, and margin values.
+- **Separate models per sample type:** Training a dedicated model for each biological sample can further boost performance on challenging cases (e.g., paramecium stained).
+- **Data augmentation:** Simulate additional holograms or add synthetic noise to increase robustness.
+- **Cross-validation:** Use k-fold cross-validation on the training set for more reliable hyperparameter selection.
+- **Model export:** Use `joblib.dump(model, "ridge_model.pkl")` or `torch.save(mlp.state_dict(), "mlp.pt")` for downstream deployment.
+
+---
+
+## References
+
+1. Aydinlar, A. *Combining Focus Metrics to Improve Autofocus in Inline Holographic Microscopy*, PHYS5014 AI Project, May 2026.
+2. Scikit-Learn documentation – Ridge Regression.
+3. PyTorch documentation – Neural Networks & Optimisers.
+4. Original dataset and helper scripts are located in `helpers.py` and `ridge_regression.py`.
