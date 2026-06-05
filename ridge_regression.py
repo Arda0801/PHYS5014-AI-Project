@@ -27,11 +27,11 @@ print("\n--- Baseline (individual metrics, tol=0.1mm) ---")
 tol = 0.1
 baseline_scores = {}
 
-for i, metric in enumerate(data.metrics):
-    curves = data.scores[:, :, i]
-    fc = fraction_correct(curves, data.true_depths, data.depths, tol)
-    baseline_scores[metric] = fc
-    print(f"  {metric:<20s}: {fc:.3f}")
+for t in [0.05, 0.1, 0.2, 0.5]:
+    for i, metric in enumerate(data.metrics):
+        curves = data.scores[:, :, i]
+        fc = fraction_correct(curves, data.true_depths, data.depths, t)
+        print(f"tol={t} {metric}: {fc:.3f}")
 
 # ---Train-test split ----------------------------------------------------------------
 # Identical to the MLP version — split at image level, stratify by type.
@@ -139,6 +139,13 @@ X_test_scaled  = scaler.transform(X_test)
 
 print("\nTraining Ridge Regression model...")
 
+for alpha in [0.01, 0.1, 1.0, 10.0, 100.0]:
+    model = Ridge(alpha=alpha)
+    model.fit(X_train_scaled, y_train)
+    y_pred = model.predict(X_test_scaled)
+    pc = -y_pred.reshape(len(test_idx), data.num_depths)
+    fc = fraction_correct(pc, test_depths, data.depths, 0.1)
+    print(f"alpha={alpha}: {fc:.3f}")
 model = Ridge(alpha=1.0)
 model.fit(X_train_scaled, y_train)
 

@@ -29,11 +29,11 @@ print("\n--- Baseline (individual metrics, tol=0.1mm) ---")
 tol = 0.1
 baseline_scores = {}
 
-for i, metric in enumerate(data.metrics):
-    curves = data.scores[:, :, i]
-    fc = fraction_correct(curves, data.true_depths, data.depths, tol)
-    baseline_scores[metric] = fc
-    print(f"  {metric:<20s}: {fc:.3f}")
+for t in [0.05, 0.1, 0.2, 0.5]:
+    for i, metric in enumerate(data.metrics):
+        curves = data.scores[:, :, i]
+        fc = fraction_correct(curves, data.true_depths, data.depths, t)
+        print(f"tol={t} {metric}: {fc:.3f}")
 
 
 # -- - Train/Test Split ---------------------------------------------------------
